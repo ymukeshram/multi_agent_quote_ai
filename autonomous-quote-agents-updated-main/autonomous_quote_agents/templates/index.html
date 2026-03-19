@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Autonomous Quote Agents — Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg:        #0a0d14;
+    --bg2:       #111520;
+    --bg3:       #1a2035;
+    --border:    #1e2d4a;
+    --accent:    #00d4ff;
+    --accent2:   #7c5cfc;
+    --green:     #00e676;
+    --orange:    #ff9800;
+    --red:       #ff3d5a;
+    --text:      #e0e8ff;
+    --muted:     #5a6a8a;
+    --card-bg:   #111828;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0d1829 0%, #111d36 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  }
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.8); } }
+  .header-badges { display: flex; gap: 8px; }
+  .badge { font-size: 0.7rem; font-family: 'Space Mono', monospace; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+  .badge.live { border-color: var(--green); color: var(--green); }
+  .badge.agents { border-color: var(--accent); color: var(--accent); }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex; gap: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    padding: 14px 20px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── MAIN LAYOUT ── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── SECTION TITLES ── */
+  .section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .kpi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .kpi-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, transparent 60%); pointer-events: none; }
+  .kpi-label { font-size: 0.72rem; color: var(--muted); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Space Mono', monospace; font-size: 1.8rem; font-weight: 700; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.blue  { color: var(--accent); }
+  .kpi-value.purple{ color: var(--accent2); }
+  .kpi-value.orange{ color: var(--orange); }
+  .kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── AGENT PIPELINE CARDS ── */
+  .pipeline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+  .agent-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .agent-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .agent-card.fully-auto::before { background: linear-gradient(90deg, var(--green), var(--accent)); }
+  .agent-card.hybrid::before     { background: linear-gradient(90deg, var(--orange), var(--accent2)); }
+  .agent-card.escalate::before   { background: linear-gradient(90deg, var(--red), var(--orange)); }
+  .agent-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .agent-name { font-weight: 700; font-size: 0.95rem; }
+  .agent-num  { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+  .agent-badge {
+    font-size: 0.65rem; font-family: 'Space Mono', monospace; padding: 3px 8px; border-radius: 20px; font-weight: 700; white-space: nowrap;
+  }
+  .badge-auto  { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-hybrid{ background: rgba(255,152,0,0.12); color: var(--orange); border: 1px solid rgba(255,152,0,0.3); }
+  .badge-escalate { background: rgba(255,61,90,0.12); color: var(--red); border: 1px solid rgba(255,61,90,0.3); }
+  .agent-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+  .feature-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { font-size: 0.67rem; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--muted); }
+
+  /* ── QUOTE FORM ── */
+  .quote-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.75rem; color: var(--muted); font-weight: 500; letter-spacing: 0.04em; }
+  .form-group input, .form-group select {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 9px 12px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--bg2); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.88rem;
+    padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: linear-gradient(135deg, #0099cc, var(--accent)); color: #000; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,212,255,0.3); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: linear-gradient(135deg, #00b050, var(--green)); color: #000; }
+  .btn-green:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,230,118,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  /* ── RESULTS PANEL ── */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1.5rem; }
+  .result-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem;
+  }
+  .result-card-title { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .result-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.83rem; }
+  .result-row:last-child { border-bottom: none; }
+  .result-key { color: var(--muted); }
+  .result-val { font-weight: 600; text-align: right; max-width: 60%; }
+
+  /* ── DECISION BANNER ── */
+  .decision-banner {
+    border-radius: 14px; padding: 1.5rem 2rem; margin: 1.5rem 0;
+    border: 1px solid; display: flex; align-items: center; gap: 1rem;
+  }
+  .decision-banner.auto-approve  { background: rgba(0,230,118,0.06); border-color: rgba(0,230,118,0.3); }
+  .decision-banner.agent-followup{ background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.3); }
+  .decision-banner.escalate      { background: rgba(255,61,90,0.06);  border-color: rgba(255,61,90,0.3); }
+  .decision-icon { font-size: 2.5rem; }
+  .decision-label { font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; }
+  .decision-desc  { font-size: 0.83rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  /* ── COT TRACE ── */
+  .cot-trace { background: #080c14; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-top: 1rem; }
+  .cot-line { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); padding: 3px 0; line-height: 1.6; }
+  .cot-line.highlight { color: var(--accent); }
+  .cot-line.escalate-line { color: var(--red); }
+  .cot-line.approve-line  { color: var(--green); }
+  .cot-line.followup-line { color: var(--orange); }
+
+  /* ── METER ── */
+  .meter-wrap { margin: 0.5rem 0; }
+  .meter-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .meter-bar { height: 6px; background: var(--bg3); border-radius: 10px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+  .meter-fill.risk   { background: linear-gradient(90deg, var(--green), var(--orange), var(--red)); }
+  .meter-fill.bind   { background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .meter-fill.conf   { background: linear-gradient(90deg, var(--orange), var(--green)); }
+
+  /* ── BATCH TABLE ── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { background: var(--bg3); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 14px; text-align: left; white-space: nowrap; }
+  td { padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.04); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .decision-pill { font-size: 0.68rem; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .pill-approve  { background: rgba(0,230,118,0.15); color: var(--green); }
+  .pill-followup { background: rgba(0,212,255,0.15); color: var(--accent); }
+  .pill-escalate { background: rgba(255,61,90,0.15);  color: var(--red); }
+  .pill-low      { background: rgba(0,230,118,0.12); color: var(--green); }
+  .pill-medium   { background: rgba(255,152,0,0.12); color: var(--orange); }
+  .pill-high     { background: rgba(255,61,90,0.12);  color: var(--red); }
+  .pbar { display: inline-block; width: 60px; height: 4px; background: var(--bg3); border-radius: 4px; vertical-align: middle; margin-left: 6px; }
+  .pbar-fill { height: 100%; border-radius: 4px; background: var(--accent); display: inline-block; }
+
+  /* ── DONUT PLACEHOLDER ── */
+  .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+  .chart-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .chart-title { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-item { display: flex; flex-direction: column; gap: 4px; }
+  .bar-row  { display: flex; align-items: center; gap: 8px; }
+  .bar-name { font-size: 0.78rem; color: var(--text); min-width: 80px; }
+  .bar-bg   { flex: 1; height: 8px; background: var(--bg3); border-radius: 8px; overflow: hidden; }
+  .bar-fg   { height: 100%; border-radius: 8px; }
+  .bar-cnt  { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); min-width: 30px; text-align: right; }
+
+  /* ── LOADING ── */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(10,13,20,0.85); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+  .loading-overlay.show { display: flex; }
+  .loading-text { font-family: 'Space Mono', monospace; color: var(--accent); font-size: 0.9rem; }
+
+  /* ── MISC ── */
+  .flex-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .hidden { display: none; }
+  .tag { font-size: 0.72rem; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted); }
+  .suggestion-list { list-style: none; margin-top: 8px; }
+  .suggestion-list li { font-size: 0.82rem; color: var(--text); padding: 5px 0; display: flex; gap: 8px; }
+  .suggestion-list li::before { content: '→'; color: var(--accent); }
+  .reasoning-list { list-style: none; }
+  .reasoning-list li { font-size: 0.8rem; color: var(--muted); padding: 4px 0; line-height: 1.5; display: flex; gap: 8px; }
+  .reasoning-list li::before { content: '•'; color: var(--accent2); }
+
+  @media (max-width: 768px) {
+    .container { padding: 1rem; }
+    .pipeline-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px;"></div>
+  <div class="loading-text" id="loadingText">Running agent pipeline...</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="dot"></div>
+    AUTONOMOUS QUOTE AGENTS
+  </div>
+  <div class="header-badges">
+    <span class="badge live">● LIVE</span>
+    <span class="badge agents">4 AGENTS ACTIVE</span>
+  </div>
+</header>
+
+<!-- Navigation Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="switchTab('pipeline')">Agent Pipeline</button>
+  <button class="tab-btn" onclick="switchTab('analyze')">Analyze Quote</button>
+  <button class="tab-btn" onclick="switchTab('batch')">Batch Processing</button>
+  <button class="tab-btn" onclick="switchTab('explainability')">Explainability</button>
+</div>
+
+<div class="container">
+
+<!-- ══════════ TAB: OVERVIEW ══════════ -->
+<div class="tab-panel active" id="tab-overview">
+
+  <div class="section-title">Dataset Intelligence</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Quotes</div>
+      <div class="kpi-value blue" id="kpi-total">{{ stats.get('total_records', '—') | int | string | replace(',','') }}</div>
+      <div class="kpi-sub">Training records</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Bind Rate</div>
+      <div class="kpi-value orange">{{ stats.get('bind_rate', '—') }}%</div>
+      <div class="kpi-sub">Class imbalance: 78/22</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">EA Bind Rate</div>
+      <div class="kpi-value green">{{ stats.get('ea_bind_rate', '—') }}%</div>
+      <div class="kpi-sub">Exclusive Agents</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">IA Bind Rate</div>
+      <div class="kpi-value purple">{{ stats.get('ia_bind_rate', '—') }}%</div>
+      <div class="kpi-sub">Independent Agents</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Premium</div>
+      <div class="kpi-value blue">${{ stats.get('avg_premium', '—') }}</div>
+      <div class="kpi-sub">Quoted premium</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Regions</div>
+      <div class="kpi-value orange">8</div>
+      <div class="kpi-sub">A B C D E F G H</div>
+    </div>
+  </div>
+
+  <div class="section-title">Data Distribution</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Risk Tier Distribution</div>
+      <div class="bar-chart" id="riskChart">
+        {% set rd = stats.get('risk_dist', {}) %}
+        {% set total_risk = (rd.get('Low',0) + rd.get('Medium',0) + rd.get('High',0)) or 1 %}
+        {% for tier, clr, bg in [('Low','#00e676','rgba(0,230,118,0.7)'), ('Medium','#ff9800','rgba(255,152,0,0.7)'), ('High','#ff3d5a','rgba(255,61,90,0.7)')] %}
+        <div class="bar-item">
+          <div class="bar-row">
+            <span class="bar-name">{{ tier }}</span>
+            <div class="bar-bg"><div class="bar-fg" style="width:{{ ((rd.get(tier,0)/total_risk)*100)|round(0) }}%; background:{{ bg }};"></div></div>
+            <span class="bar-cnt">{{ rd.get(tier, 0) | int }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Coverage Distribution</div>
+      <div class="bar-chart">
+        {% set cd = stats.get('coverage_dist', {}) %}
+        {% set total_cov = (cd.values() | sum) or 1 %}
+        {% for cov, clr in [('Basic','rgba(124,92,252,0.7)'), ('Balanced','rgba(0,212,255,0.7)'), ('Enhanced','rgba(0,230,118,0.7)')] %}
+        <div class="bar-item">
+          <div class="bar-row">
+            <span class="bar-name">{{ cov }}</span>
+            <div class="bar-bg"><div class="bar-fg" style="width:{{ ((cd.get(cov,0)/total_cov)*100)|round(0) }}%; background:{{ clr }};"></div></div>
+            <span class="bar-cnt">{{ cd.get(cov, 0) | int }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Agent Type Split</div>
+      <div class="bar-chart">
+        {% set ea_pct = stats.get('ea_pct', 71) %}
+        {% set ia_pct = (100 - ea_pct)|round(1) %}
+        <div class="bar-item">
+          <div class="bar-row">
+            <span class="bar-name">EA (Exclusive)</span>
+            <div class="bar-bg"><div class="bar-fg" style="width:{{ ea_pct }}%; background:rgba(0,212,255,0.7);"></div></div>
+            <span class="bar-cnt">{{ ea_pct }}%</span>
+          </div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-row">
+            <span class="bar-name">IA (Independent)</span>
+            <div class="bar-bg"><div class="bar-fg" style="width:{{ ia_pct }}%; background:rgba(124,92,252,0.7);"></div></div>
+            <span class="bar-cnt">{{ ia_pct }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Problem Statement</div>
+  <div class="card">
+    <p style="font-size:0.88rem;color:var(--muted);line-height:1.8;">
+      Auto insurance carriers generate thousands of quotes daily through Exclusive Agents (EA) and Independent Agents (IA) across multiple regions. Yet only <strong style="color:var(--accent);">1 in 5 quotes</strong> ever converts to a bound policy. This system implements a 4-agent AI pipeline that autonomously processes quotes end-to-end — profiling risk, predicting conversion, negotiating premiums, and routing decisions — <strong style="color:var(--green);">without requiring a human in the loop for every step</strong>.
+    </p>
+    <div class="flex-row" style="margin-top:1rem;">
+      <span class="tag">Multi-Agent Orchestration</span>
+      <span class="tag">ML Core (RF + GBM)</span>
+      <span class="tag">Chain-of-Thought Explainability</span>
+      <span class="tag">Human Escalation Protocol</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: PIPELINE ══════════ -->
+<div class="tab-panel" id="tab-pipeline">
+
+  <div class="section-title">4-Agent Architecture</div>
+  <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">
+    Each agent consumes structured outputs from the previous agent and passes enriched signals downstream. The pipeline is fully autonomous — a human only sees quotes that reach the Escalate bucket.
+  </div>
+
+  <div class="pipeline-grid">
+    <div class="agent-card fully-auto">
+      <div class="agent-header">
+        <div>
+          <div class="agent-name">Agent 1 — Risk Profiler</div>
+          <div class="agent-num">RandomForest · 200 trees · class_weight=balanced</div>
+        </div>
+        <span class="agent-badge badge-auto">FULLY AUTO</span>
+      </div>
+      <div class="agent-desc">Ingests raw quote data and computes a real-time risk tier (Low / Medium / High) using driver history, age, experience, and usage patterns. Drives all downstream agent decisions.</div>
+      <div class="feature-chips">
+        <span class="chip">Prev_Accidents</span><span class="chip">Prev_Citations</span>
+        <span class="chip">Driving_Exp</span><span class="chip">Driver_Age</span>
+        <span class="chip">Veh_Usage</span><span class="chip">Annual_Miles</span>
+      </div>
+    </div>
+
+    <div class="agent-card fully-auto">
+      <div class="agent-header">
+        <div>
+          <div class="agent-name">Agent 2 — Conversion Predictor</div>
+          <div class="agent-num">GradientBoosting · 300 trees · sample_weight for 78/22 imbalance</div>
+        </div>
+        <span class="agent-badge badge-auto">FULLY AUTO</span>
+      </div>
+      <div class="agent-desc">Scores each inbound quote with a bind probability (0–100%). Handles the 22% class imbalance via inverse-frequency sample weighting. Risk tier from Agent 1 is a key input.</div>
+      <div class="feature-chips">
+        <span class="chip">Re_Quote</span><span class="chip">Q_Valid_DT</span>
+        <span class="chip">Coverage</span><span class="chip">Agent_Type</span>
+        <span class="chip">Region</span><span class="chip">Sal_Range</span><span class="chip">Risk_Tier ↑A1</span>
+      </div>
+    </div>
+
+    <div class="agent-card hybrid">
+      <div class="agent-header">
+        <div>
+          <div class="agent-name">Agent 3 — Premium Advisor</div>
+          <div class="agent-num">Rule-based affordability + ML-calibrated adjustment</div>
+        </div>
+        <span class="agent-badge badge-hybrid">HYBRID</span>
+      </div>
+      <div class="agent-desc">For high-propensity unconverted quotes, reasons whether Quoted_Premium is the conversion blocker. Recommends an adjusted premium band or alternative coverage tier autonomously.</div>
+      <div class="feature-chips">
+        <span class="chip">Quoted_Premium</span><span class="chip">Coverage</span>
+        <span class="chip">Sal_Range</span><span class="chip">Vehicl_Cost_Range</span>
+        <span class="chip">Re_Quote</span><span class="chip">Risk_Tier ↑A1</span><span class="chip">Bind_Prob ↑A2</span>
+      </div>
+    </div>
+
+    <div class="agent-card escalate">
+      <div class="agent-header">
+        <div>
+          <div class="agent-name">Agent 4 — Decision Router</div>
+          <div class="agent-num">Rule-based with confidence thresholds</div>
+        </div>
+        <span class="agent-badge badge-escalate">ESCALATE-ONLY</span>
+      </div>
+      <div class="agent-desc">Combines all upstream outputs into: Auto-Approve, Agent Follow-Up, or Escalate to Underwriter. Only the last bucket ever touches a human — designed for minimal escalation rate.</div>
+      <div class="feature-chips">
+        <span class="chip">Risk_Tier ↑A1</span><span class="chip">Risk_Score ↑A1</span>
+        <span class="chip">Bind_Prob ↑A2</span><span class="chip">Is_Blocker ↑A3</span>
+        <span class="chip">Adj_Premium ↑A3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Decision Thresholds</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;">
+      <div>
+        <div style="color:var(--green);font-weight:700;margin-bottom:8px;">✅ Auto-Approve</div>
+        <div class="reasoning-list"><ul>
+          <li>Bind probability ≥ 65%</li>
+          <li>Risk score ≤ 40</li>
+          <li>Agent 1 confidence ≥ 75%</li>
+          <li>No premium blocker detected</li>
+        </ul></div>
+      </div>
+      <div>
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px;">🔵 Agent Follow-Up</div>
+        <div class="reasoning-list"><ul>
+          <li>Moderate bind probability (20–65%)</li>
+          <li>Premium blocker may be present</li>
+          <li>Coverage downgrade recommended</li>
+          <li>Any other middle-ground signal</li>
+        </ul></div>
+      </div>
+      <div>
+        <div style="color:var(--red);font-weight:700;margin-bottom:8px;">🔴 Escalate to Underwriter</div>
+        <div class="reasoning-list"><ul>
+          <li>Risk score ≥ 70</li>
+          <li>Agent 1 confidence ≤ 50%</li>
+          <li>Bind prob ≤ 20% with High risk tier</li>
+          <li>Any uncertain edge case</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: ANALYZE QUOTE ══════════ -->
+<div class="tab-panel" id="tab-analyze">
+
+  <div class="section-title">Quote Input</div>
+  <div class="card">
+    <div class="flex-row" style="margin-bottom:1.25rem;">
+      <button class="btn btn-outline" onclick="loadRandomQuote()">⟳ Load Random Quote</button>
+      <span style="font-size:0.8rem;color:var(--muted);">or fill in the form manually below</span>
+    </div>
+
+    <div class="quote-form-grid" id="quoteForm">
+      <div class="form-group">
+        <label>Quote Number</label>
+        <input type="text" id="f_Quote_Num" value="AQ-TEST-001" placeholder="AQ-X-000000"/>
+      </div>
+      <div class="form-group">
+        <label>Agent Type</label>
+        <select id="f_Agent_Type"><option>EA</option><option>IA</option></select>
+      </div>
+      <div class="form-group">
+        <label>Region</label>
+        <select id="f_Region">
+          <option>A</option><option>B</option><option>C</option><option>D</option>
+          <option>E</option><option>F</option><option>G</option><option>H</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Coverage</label>
+        <select id="f_Coverage"><option>Basic</option><option selected>Balanced</option><option>Enhanced</option></select>
+      </div>
+      <div class="form-group">
+        <label>Policy Type</label>
+        <select id="f_Policy_Type"><option>Car</option><option>Truck</option><option>Van</option></select>
+      </div>
+      <div class="form-group">
+        <label>Driver Age</label>
+        <input type="number" id="f_Driver_Age" value="35" min="16" max="90"/>
+      </div>
+      <div class="form-group">
+        <label>Driving Experience (yrs)</label>
+        <input type="number" id="f_Driving_Exp" value="12" min="0" max="60"/>
+      </div>
+      <div class="form-group">
+        <label>Previous Accidents</label>
+        <input type="number" id="f_Prev_Accidents" value="0" min="0" max="10"/>
+      </div>
+      <div class="form-group">
+        <label>Previous Citations</label>
+        <input type="number" id="f_Prev_Citations" value="0" min="0" max="10"/>
+      </div>
+      <div class="form-group">
+        <label>Vehicle Usage</label>
+        <select id="f_Veh_Usage"><option>Pleasure</option><option>Commute</option><option>Business</option></select>
+      </div>
+      <div class="form-group">
+        <label>Annual Miles Range</label>
+        <select id="f_Annual_Miles_Range">
+          <option>&lt;= 7.5 K</option><option>&gt; 7.5 K &amp; &lt;= 15 K</option>
+          <option selected>&gt; 15 K &amp; &lt;= 25 K</option><option>&gt; 25 K &amp; &lt;= 35 K</option>
+          <option>&gt; 35 K &amp; &lt;= 45 K</option><option>&gt; 45 K &amp; &lt;= 55 K</option>
+          <option>&gt; 55 K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Salary Range</label>
+        <select id="f_Sal_Range">
+          <option>&lt;= $ 25 K</option><option>&gt; $ 25 K &lt;= $ 40 K</option>
+          <option selected>&gt; $ 40 K &lt;= $ 60 K</option><option>&gt; $ 60 K &lt;= $ 90 K</option>
+          <option>&gt; $ 90 K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Vehicle Cost Range</label>
+        <select id="f_Vehicl_Cost_Range">
+          <option>&lt;= $ 10 K</option><option selected>&gt; $ 10 K &lt;= $ 20 K</option>
+          <option>&gt; $ 20 K &lt;= $ 30 K</option><option>&gt; $ 30 K &lt;= $ 40 K</option>
+          <option>&gt; $ 40 K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quoted Premium ($)</label>
+        <input type="number" id="f_Quoted_Premium" value="750" min="200" max="3000" step="0.01"/>
+      </div>
+      <div class="form-group">
+        <label>Re-Quote?</label>
+        <select id="f_Re_Quote"><option>No</option><option>Yes</option></select>
+      </div>
+      <div class="form-group">
+        <label>HH Drivers</label>
+        <input type="number" id="f_HH_Drivers" value="1" min="1" max="10"/>
+      </div>
+      <div class="form-group">
+        <label>Quote Creation Date</label>
+        <input type="text" id="f_Q_Creation_DT" value="2024/01/15"/>
+      </div>
+      <div class="form-group">
+        <label>Quote Valid Until</label>
+        <input type="text" id="f_Q_Valid_DT" value="2024/03/15"/>
+      </div>
+    </div>
+
+    <div class="flex-row" style="margin-top:1.5rem;">
+      <button class="btn btn-primary" onclick="runPipeline()">▶ Run Agent Pipeline</button>
+      <button class="btn btn-outline" onclick="clearResults()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection" class="hidden">
+    <div class="section-title">Pipeline Results</div>
+
+    <!-- Decision Banner -->
+    <div id="decisionBanner" class="decision-banner">
+      <div class="decision-icon" id="decisionIcon">—</div>
+      <div>
+        <div class="decision-label" id="decisionLabel">—</div>
+        <div class="decision-desc" id="decisionDesc">—</div>
+      </div>
+    </div>
+
+    <!-- Agent output cards -->
+    <div class="results-grid">
+      <!-- Agent 1 -->
+      <div class="result-card">
+        <div class="result-card-title">🤖 Agent 1 — Risk Profiler</div>
+        <div class="meter-wrap">
+          <div class="meter-label"><span>Risk Score</span><span id="a1_riskScore">—</span></div>
+          <div class="meter-bar"><div class="meter-fill risk" id="a1_riskBar" style="width:0%"></div></div>
+        </div>
+        <div class="meter-wrap" style="margin-top:0.75rem;">
+          <div class="meter-label"><span>Confidence</span><span id="a1_conf">—</span></div>
+          <div class="meter-bar"><div class="meter-fill conf" id="a1_confBar" style="width:0%"></div></div>
+        </div>
+        <div class="result-row" style="margin-top:1rem;">
+          <span class="result-key">Risk Tier</span>
+          <span class="result-val" id="a1_tier">—</span>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">EXPLANATION</div>
+          <div style="font-size:0.78rem;color:var(--text);line-height:1.6;" id="a1_exp">—</div>
+        </div>
+      </div>
+
+      <!-- Agent 2 -->
+      <div class="result-card">
+        <div class="result-card-title">🤖 Agent 2 — Conversion Predictor</div>
+        <div class="meter-wrap">
+          <div class="meter-label"><span>Bind Probability</span><span id="a2_bind">—</span></div>
+          <div class="meter-bar"><div class="meter-fill bind" id="a2_bindBar" style="width:0%"></div></div>
+        </div>
+        <div class="result-row" style="margin-top:1rem;">
+          <span class="result-key">Category</span>
+          <span class="result-val" id="a2_cat">—</span>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">TOP DRIVERS</div>
+          <ul class="suggestion-list" id="a2_drivers"></ul>
+        </div>
+      </div>
+
+      <!-- Agent 3 -->
+      <div class="result-card">
+        <div class="result-card-title">🤖 Agent 3 — Premium Advisor</div>
+        <div class="result-row">
+          <span class="result-key">Original Premium</span>
+          <span class="result-val" id="a3_orig">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-key">Adjusted Premium</span>
+          <span class="result-val" id="a3_adj" style="color:var(--green)">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-key">Recommended Band</span>
+          <span class="result-val" id="a3_band">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-key">Recommended Coverage</span>
+          <span class="result-val" id="a3_cov">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-key">Premium Blocker?</span>
+          <span class="result-val" id="a3_blocker">—</span>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">SUGGESTIONS</div>
+          <ul class="suggestion-list" id="a3_sugg"></ul>
+        </div>
+      </div>
+
+      <!-- Agent 4 -->
+      <div class="result-card">
+        <div class="result-card-title">🤖 Agent 4 — Decision Router</div>
+        <div class="result-row">
+          <span class="result-key">Final Decision</span>
+          <span class="result-val" id="a4_dec">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-key">Decision Score</span>
+          <span class="result-val" id="a4_score">—</span>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">ACTION</div>
+          <div style="font-size:0.78rem;line-height:1.6;" id="a4_action">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chain of Thought -->
+    <div class="section-title" style="margin-top:1.5rem;">Chain of Thought Trace</div>
+    <div class="cot-trace" id="cotTrace"></div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: BATCH ══════════ -->
+<div class="tab-panel" id="tab-batch">
+
+  <div class="section-title">Batch Processing</div>
+  <div class="card">
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;">
+      Run the full 4-agent pipeline on 20 randomly sampled quotes from the dataset. See how the system routes decisions in real-time.
+    </p>
+    <button class="btn btn-green" onclick="runBatch()">⚡ Run Batch (20 quotes)</button>
+  </div>
+
+  <div id="batchResults" class="hidden">
+    <div class="kpi-grid" id="batchKpis"></div>
+    <div class="section-title">Quote Routing Results</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Quote #</th><th>Region</th><th>Agent</th>
+            <th>Risk Tier</th><th>Bind Prob</th><th>Decision</th><th>Premium</th>
+          </tr>
+        </thead>
+        <tbody id="batchTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: EXPLAINABILITY ══════════ -->
+<div class="tab-panel" id="tab-explainability">
+
+  <div class="section-title">Explainability Framework</div>
+  <div class="card">
+    <p style="font-size:0.88rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem;">
+      Every agent decision in this pipeline is explainable. The system uses three complementary techniques to justify routing decisions to underwriters and regulators.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px;font-size:0.9rem;">Chain-of-Thought Traces</div>
+        <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;">Every routing decision emits a step-by-step log of agent inputs, threshold comparisons, and the final routing rationale. Visible in the Analyze Quote tab.</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+        <div style="color:var(--accent2);font-weight:700;margin-bottom:8px;font-size:0.9rem;">Feature Attribution (LIME-style)</div>
+        <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;">Agent 2 reports the top drivers of its bind probability score (re-quote behavior, risk tier, coverage preference, salary level) in plain English for every prediction.</p>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+        <div style="color:var(--green);font-weight:700;margin-bottom:8px;font-size:0.9rem;">Domain-Rule Audit Trail</div>
+        <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;">Agent 3 (Hybrid) documents every rule it fires — affordability threshold, vehicle cost ratio, re-quote discount — so underwriters can audit premium adjustments.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Human Escalation Protocol</div>
+  <div class="card">
+    <p style="font-size:0.88rem;color:var(--muted);line-height:1.8;margin-bottom:1rem;">
+      The escalation protocol is designed to minimize human workload while maintaining accuracy. A quote reaches a human underwriter only when <strong style="color:var(--red);">one or more</strong> of these conditions are triggered:
+    </p>
+    <div class="bar-chart" style="gap:12px;">
+      <div class="bar-item">
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:4px;color:var(--red);">Risk Score ≥ 70</div>
+        <div style="font-size:0.78rem;color:var(--muted);">Agent 1 assigns a risk score above 70/100, indicating high prior incidents or dangerous driver profile. Auto-approval not safe.</div>
+      </div>
+      <div class="bar-item">
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:4px;color:var(--orange);">Agent 1 Confidence ≤ 50%</div>
+        <div style="font-size:0.78rem;color:var(--muted);">When the Random Forest produces low-confidence risk tier assignment, the case is inherently ambiguous and requires human judgment.</div>
+      </div>
+      <div class="bar-item">
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:4px;color:var(--red);">Bind Prob ≤ 20% + High Risk Tier</div>
+        <div style="font-size:0.78rem;color:var(--muted);">A high-risk customer with very low conversion probability represents a special case — writing or declining this policy needs underwriter expertise.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Regional & Channel Intelligence</div>
+  <div class="card">
+    <p style="font-size:0.88rem;color:var(--muted);line-height:1.8;">
+      The pipeline encodes Region (A–H) and Agent Type (EA/IA) as features in Agent 2, allowing the Conversion Predictor to learn regional conversion patterns. EA agents historically show higher bind rates than IA agents in the training data — this signal is captured and used to calibrate bind probability scores per channel.
+    </p>
+    <div style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;">
+      <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:1.4rem;font-family:'Space Mono',monospace;color:var(--green);">{{ stats.get('ea_bind_rate','—') }}%</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">EA Bind Rate</div>
+      </div>
+      <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:1.4rem;font-family:'Space Mono',monospace;color:var(--accent2);">{{ stats.get('ia_bind_rate','—') }}%</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">IA Bind Rate</div>
+      </div>
+      <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:1.4rem;font-family:'Space Mono',monospace;color:var(--orange);">8</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">Regions Covered</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Loading helpers ───────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || 'Processing...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ── Collect form data ─────────────────────────────────────────────────────────
+function collectForm() {
+  const ids = ['Quote_Num','Agent_Type','Region','Coverage','Policy_Type',
+    'Driver_Age','Driving_Exp','Prev_Accidents','Prev_Citations','Veh_Usage',
+    'Annual_Miles_Range','Sal_Range','Vehicl_Cost_Range','Quoted_Premium',
+    'Re_Quote','HH_Drivers','Q_Creation_DT','Q_Valid_DT'];
+  const record = {};
+  ids.forEach(id => {
+    const el = document.getElementById('f_' + id);
+    if (!el) return;
+    let v = el.value;
+    if (['Driver_Age','Driving_Exp','Prev_Accidents','Prev_Citations','Quoted_Premium','HH_Drivers'].includes(id))
+      v = parseFloat(v) || 0;
+    record[id] = v;
+  });
+  return record;
+}
+
+// ── Load random quote ─────────────────────────────────────────────────────────
+async function loadRandomQuote() {
+  showLoading('Loading random quote...');
+  try {
+    const r = await fetch('/api/random_quote');
+    const data = await r.json();
+    const map = {
+      'Quote_Num':data.Quote_Num,'Agent_Type':data.Agent_Type,'Region':data.Region,
+      'Coverage':data.Coverage,'Policy_Type':data.Policy_Type,'Driver_Age':data.Driver_Age,
+      'Driving_Exp':data.Driving_Exp,'Prev_Accidents':data.Prev_Accidents,
+      'Prev_Citations':data.Prev_Citations,'Veh_Usage':data.Veh_Usage,
+      'Annual_Miles_Range':data.Annual_Miles_Range,'Sal_Range':data.Sal_Range,
+      'Vehicl_Cost_Range':data.Vehicl_Cost_Range,'Quoted_Premium':data.Quoted_Premium,
+      'Re_Quote':data.Re_Quote,'HH_Drivers':data.HH_Drivers,
+      'Q_Creation_DT':data.Q_Creation_DT,'Q_Valid_DT':data.Q_Valid_DT
+    };
+    Object.entries(map).forEach(([k, v]) => {
+      const el = document.getElementById('f_' + k);
+      if (el && v !== undefined && v !== '') el.value = v;
+    });
+  } catch(e) { alert('Error: ' + e); }
+  hideLoading();
+}
+
+// ── Run pipeline ──────────────────────────────────────────────────────────────
+async function runPipeline() {
+  const record = collectForm();
+  showLoading('Running Agent 1 → 2 → 3 → 4 pipeline...');
+  try {
+    const r = await fetch('/api/run_pipeline', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(record)
+    });
+    const data = await r.json();
+    hideLoading();
+    if (!data.success) { alert('Error: ' + data.error); return; }
+    renderResults(data.result);
+  } catch(e) { hideLoading(); alert('Error: ' + e); }
+}
+
+function renderResults(res) {
+  document.getElementById('resultsSection').classList.remove('hidden');
+  const a1 = res.agent1_risk, a2 = res.agent2_conversion,
+        a3 = res.agent3_premium, a4 = res.agent4_decision;
+
+  // Agent 1
+  setBar('a1_riskBar', a1.risk_score);
+  setBar('a1_confBar', a1.confidence);
+  document.getElementById('a1_riskScore').textContent = a1.risk_score + '/100';
+  document.getElementById('a1_conf').textContent = a1.confidence + '%';
+  const tierColors = {Low:'var(--green)',Medium:'var(--orange)',High:'var(--red)'};
+  document.getElementById('a1_tier').textContent = a1.risk_tier;
+  document.getElementById('a1_tier').style.color = tierColors[a1.risk_tier] || 'var(--text)';
+  document.getElementById('a1_exp').textContent = a1.explanation;
+
+  // Agent 2
+  setBar('a2_bindBar', a2.bind_probability);
+  document.getElementById('a2_bind').textContent = a2.bind_probability + '%';
+  document.getElementById('a2_cat').textContent = a2.conversion_category;
+  const driversList = document.getElementById('a2_drivers');
+  driversList.innerHTML = (a2.top_drivers||[]).map(d => `<li>${d}</li>`).join('');
+
+  // Agent 3
+  document.getElementById('a3_orig').textContent = '$' + a3.original_premium;
+  document.getElementById('a3_adj').textContent = '$' + a3.adjusted_premium;
+  document.getElementById('a3_band').textContent = a3.recommended_band;
+  document.getElementById('a3_cov').textContent = a3.recommended_coverage;
+  document.getElementById('a3_blocker').textContent = a3.is_premium_blocker ? '⚠️ YES' : '✅ NO';
+  document.getElementById('a3_blocker').style.color = a3.is_premium_blocker ? 'var(--orange)' : 'var(--green)';
+  const suggList = document.getElementById('a3_sugg');
+  suggList.innerHTML = (a3.suggestions||[]).map(s=>`<li>${s}</li>`).join('');
+
+  // Agent 4
+  const decColors = {'Auto-Approve':'var(--green)','Agent Follow-Up':'var(--accent)','Escalate to Underwriter':'var(--red)'};
+  document.getElementById('a4_dec').textContent = a4.final_decision;
+  document.getElementById('a4_dec').style.color = decColors[a4.final_decision] || 'var(--text)';
+  document.getElementById('a4_score').textContent = a4.decision_score;
+  document.getElementById('a4_action').textContent = a4.action_summary;
+
+  // Decision banner
+  const banner = document.getElementById('decisionBanner');
+  const icons = {'Auto-Approve':'✅','Agent Follow-Up':'🔵','Escalate to Underwriter':'🔴'};
+  const bannerClass = {'Auto-Approve':'auto-approve','Agent Follow-Up':'agent-followup','Escalate to Underwriter':'escalate'};
+  banner.className = 'decision-banner ' + (bannerClass[a4.final_decision] || '');
+  document.getElementById('decisionIcon').textContent = icons[a4.final_decision] || '—';
+  document.getElementById('decisionLabel').textContent = a4.final_decision;
+  document.getElementById('decisionDesc').textContent = a4.action_summary;
+
+  // COT
+  const cot = document.getElementById('cotTrace');
+  const cotLines = a4.chain_of_thought || [];
+  cot.innerHTML = cotLines.map(line => {
+    let cls = 'cot-line';
+    if (line.includes('ESCALATE')) cls += ' escalate-line';
+    else if (line.includes('AUTO-APPROVE')) cls += ' approve-line';
+    else if (line.includes('FOLLOW-UP')) cls += ' followup-line';
+    else if (line.includes('FINAL')) cls += ' highlight';
+    return `<div class="${cls}">${line}</div>`;
+  }).join('');
+
+  document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+}
+
+function setBar(id, val) {
+  document.getElementById(id).style.width = Math.min(100, Math.max(0, val)) + '%';
+}
+
+function clearResults() {
+  document.getElementById('resultsSection').classList.add('hidden');
+}
+
+// ── Batch ─────────────────────────────────────────────────────────────────────
+async function runBatch() {
+  showLoading('Running pipeline on 20 quotes...');
+  try {
+    const r = await fetch('/api/batch_sample');
+    const data = await r.json();
+    hideLoading();
+    renderBatch(data);
+  } catch(e) { hideLoading(); alert('Error: ' + e); }
+}
+
+function renderBatch(data) {
+  document.getElementById('batchResults').classList.remove('hidden');
+  const dec = data.decisions;
+  const total = Object.values(dec).reduce((a,b)=>a+b,0) || 1;
+  const kpis = [
+    {label:'Auto-Approve',val:dec['Auto-Approve']||0,color:'green',sub:`${((dec['Auto-Approve']||0)/total*100).toFixed(0)}% of batch`},
+    {label:'Agent Follow-Up',val:dec['Agent Follow-Up']||0,color:'blue',sub:`${((dec['Agent Follow-Up']||0)/total*100).toFixed(0)}% of batch`},
+    {label:'Escalate',val:dec['Escalate to Underwriter']||0,color:'orange',sub:`${((dec['Escalate to Underwriter']||0)/total*100).toFixed(0)}% of batch`},
+    {label:'Avg Bind Prob',val:data.avg_bind_prob+'%',color:'purple',sub:'Across batch'},
+  ];
+  document.getElementById('batchKpis').innerHTML = kpis.map(k=>
+    `<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.color}">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`
+  ).join('');
+
+  const pilcls = {'Auto-Approve':'pill-approve','Agent Follow-Up':'pill-followup','Escalate to Underwriter':'pill-escalate'};
+  const riskCls = {'Low':'pill-low','Medium':'pill-medium','High':'pill-high'};
+  const tbody = document.getElementById('batchTableBody');
+  tbody.innerHTML = (data.quotes||[]).map(q=>`
+    <tr>
+      <td style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted)">${q.quote_num}</td>
+      <td>${q.region}</td>
+      <td><span style="font-size:0.75rem;">${q.agent_type}</span></td>
+      <td><span class="decision-pill ${riskCls[q.risk_tier]||''}">${q.risk_tier}</span></td>
+      <td>
+        ${q.bind_prob}%
+        <span class="pbar"><span class="pbar-fill" style="width:${q.bind_prob}%"></span></span>
+      </td>
+      <td><span class="decision-pill ${pilcls[q.decision]||''}">${q.decision}</span></td>
+      <td style="font-family:'Space Mono',monospace;font-size:0.8rem;">$${q.premium}</td>
+    </tr>
+  `).join('');
+}
+</script>
+</body>
+</html>
