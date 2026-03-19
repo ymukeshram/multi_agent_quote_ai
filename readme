@@ -1,123 +1,26 @@
-# Autonomous Quote Agents — Hackathon Project
-
-A multi-agent AI system that autonomously processes auto insurance quotes end-to-end:
-profiling risk, predicting conversion, negotiating premiums, and routing decisions
-**without requiring a human in the loop for every step**.
-
----
-
-## Project Structure
-
-```
-autonomous_quote_agents/
-├── data/
-│   └── quotes.csv              ← Dataset (146,259 records)
-├── models/                     ← Trained model files (auto-generated)
-├── agents/
-│   ├── agent1_risk_profiler.py        ← Agent 1: RandomForest risk tier
-│   ├── agent2_conversion_predictor.py ← Agent 2: GBM bind probability
-│   ├── agent3_premium_advisor.py      ← Agent 3: Hybrid premium reasoning
-│   └── agent4_decision_router.py      ← Agent 4: Decision routing
-├── templates/
-│   └── index.html              ← Full web dashboard
-├── pipeline.py                 ← Multi-agent orchestration
-├── train_models.py             ← Train all ML models
-├── app.py                      ← Flask web server
-├── requirements.txt
-└── README.md
-```
-
----
-
-## Quick Start
-
-### 1. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Train the ML models
-```bash
-python train_models.py
-```
-This trains Agent 1 (Risk Profiler) and Agent 2 (Conversion Predictor) on the full dataset.
-**Run this once before starting the app.**
-
-### 3. Start the web server
-```bash
-python app.py
-```
-
-### 4. Open the dashboard
-```
-http://127.0.0.1:5000
-```
-
----
-
-## The 4-Agent Pipeline
-
-| Agent | Name | Type | Model |
-|-------|------|------|-------|
-| 1 | Risk Profiler | FULLY AUTO | RandomForest (200 trees, class_weight=balanced) |
-| 2 | Conversion Predictor | FULLY AUTO | GradientBoosting (300 trees, sample_weight for 78/22 imbalance) |
-| 3 | Premium Advisor | HYBRID | Rule-based affordability + domain thresholds |
-| 4 | Decision Router | ESCALATE-ONLY | Confidence threshold routing |
-
-### Pipeline Flow
-```
-Quote Record
-    ↓
-[Agent 1] Risk Profiler → risk_tier, risk_score, confidence
-    ↓
-[Agent 2] Conversion Predictor → bind_probability, conversion_category
-    ↓
-[Agent 3] Premium Advisor → adjusted_premium, recommendations
-    ↓
-[Agent 4] Decision Router → Auto-Approve | Agent Follow-Up | Escalate
-```
-
----
-
-## Decision Thresholds
-
-### Auto-Approve 
-- Bind probability ≥ 65%
-- Risk score ≤ 40
-- Agent 1 confidence ≥ 75%
-- No premium blocker detected
-
-### Escalate to Underwriter 
-- Risk score ≥ 70
-- Agent 1 confidence ≤ 50%
-- Bind prob ≤ 20% with High risk tier
-
-### Agent Follow-Up 
-- Everything else (moderate signals)
-
----
-## Dataset Statistics
-- **146,259** quote records
-- **22%** bind rate (severe class imbalance — handled via sample weighting)
-- **8 Regions** (A–H)
-- **2 Agent Types**: EA (Exclusive) and IA (Independent)
-- **25 Features** per record
-
----
-
-## Explainability
-
-Every decision is explainable via:
-1. **Chain-of-Thought Traces** — step-by-step log per agent (visible in dashboard)
-2. **Feature Attribution** — plain-English top drivers for bind probability
-3. **Domain-Rule Audit Trail** — Agent 3 documents every rule it fires
-
----
-
-## Dependencies
-```
-flask>=2.3.0
-scikit-learn>=1.3.0
-pandas>=2.0.0
-numpy>=1.24.0
-```
+ Autonomous Quote Agents
+The Problem
+Traditional auto insurance quoting is often a bottleneck. Underwriters are overwhelmed by manual reviews, and sales agents lose potential customers due to slow response times or rigid pricing. Most systems are either "dumb" (simple rule-sets) or "black boxes" (ML models that humans don't trust).
+The Solution
+Built during a 48-hour hackathon with a team of friends, Autonomous Quote Agents is a multi-agent AI orchestration system designed to automate the end-to-end insurance lifecycle.
+By breaking down the quoting process into four specialized AI agents, we’ve created a system that doesn't just predict outcomes—it reasons through them. It profiles risk, predicts the likelihood of a sale (binding), suggests premium adjustments to stay competitive, and decides whether to approve the quote instantly or escalate it to a human underwriter.
+🧠 The Agentic Architecture
+Our system moves away from a single monolithic model and instead uses a "Chain-of-Thought" Pipeline:
+Agent 1: The Risk Profiler (The Underwriter)
+Uses a Random Forest (200 trees) to categorize the applicant into risk tiers. It handles class imbalance via balanced weighting to ensure high-risk drivers aren't missed.
+Agent 2: The Conversion Predictor (The Sales Lead)
+Powered by a Gradient Boosting Machine (GBM), this agent analyzes historical bind data (146k+ records) to predict the probability that a user will actually purchase the policy.
+Agent 3: The Premium Advisor (The Negotiator)
+A hybrid agent that combines ML insights with domain-specific logic. It suggests premium discounts or "sweet spots" to increase conversion without compromising the loss ratio.
+Agent 4: Decision Router (The Manager)
+The final gatekeeper. It evaluates the confidence levels and outputs of the previous three agents to decide the final action: Auto-Approve, Agent Follow-Up, or Underwriter Escalation.
+✨ Key Innovations
+Handling Imbalance: Insurance data is notoriously imbalanced (only 22% of quotes usually "bind"). We implemented custom sample weighting and balanced class weights to ensure our models are sensitive to successful conversions.
+Explainable AI (XAI): We built a "Chain-of-Thought" logging system. Every quote processed shows exactly why an agent made a decision, providing a plain-English audit trail for human supervisors.
+Confidence-Based Routing: The system doesn't just guess; it knows when it's unsure. If Agent 1's confidence drops below 50%, the system automatically flags the quote for human intervention.
+Scale: Validated on a massive dataset of 146,259 records, proving the system can handle enterprise-level quote volumes.
+🛠️ Built With
+Python / Flask: Core backend and web dashboard.
+Scikit-Learn: Machine learning models (RandomForest & GradientBoosting).
+Pandas & NumPy: High-performance data processing for 146k+ records.
+Custom Agent Orchestration: Our proprietary logic for passing state between the four specialized agents.
